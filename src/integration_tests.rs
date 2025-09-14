@@ -5,12 +5,10 @@ use crate::{Venda, ItemVenda, TlqTester};
 
 #[tokio::test]
 async fn test_single_venda() {
-    let tester = TlqTester::new("localhost", 1337).expect("Falha ao criar cliente TLQ");
-    
-    // Limpar qualquer mensagem existente na fila
-    tester.clear_queue().await.expect("Falha ao limpar a fila");
-    
-    // Criar uma venda de teste
+    let tester = TlqTester::new("localhost", 1337).expect("Falha ao criar cliente TLQ");   
+
+    tester.clear_queue().await.expect("Falha ao limpar a fila");    
+
     let venda = Venda {
         id: 2001,
         cliente_id: 601,
@@ -31,15 +29,12 @@ async fn test_single_venda() {
             }
         ],
     };
-    
-    // Adicionar venda à fila
+
     let _message = tester.add_venda_message(&venda).await.expect("Falha ao adicionar venda");
-    
-    // Recuperar e processar vendas
     let processed_vendas = tester.get_and_process_vendas(5).await.expect("Falha ao processar vendas");
     
-    // Verificar se a venda foi processada corretamente
     assert!(!processed_vendas.is_empty(), "Nenhuma venda foi recuperada da fila");
+
     let processed_venda = &processed_vendas[0];
     assert_eq!(processed_venda.id, venda.id);
     assert_eq!(processed_venda.cliente_id, venda.cliente_id);
@@ -49,12 +44,10 @@ async fn test_single_venda() {
 
 #[tokio::test]
 async fn test_multiple_vendas() {
-    let tester = TlqTester::new("localhost", 1337).expect("Falha ao criar cliente TLQ");
-    
-    // Limpar qualquer mensagem existente na fila
-    tester.clear_queue().await.expect("Falha ao limpar a fila");
-    
-    // Adicionar múltiplas vendas
+    let tester = TlqTester::new("localhost", 1337).expect("Falha ao criar cliente TLQ");    
+
+    tester.clear_queue().await.expect("Falha ao limpar a fila");    
+
     let vendas_to_add = vec![
         Venda {
             id: 3001,
@@ -102,17 +95,14 @@ async fn test_multiple_vendas() {
     
     for venda in &vendas_to_add {
         tester.add_venda_message(venda).await.expect("Falha ao adicionar venda");
-    }
-    
-    // Recuperar e processar vendas
+    }    
+
     let processed_vendas = tester.get_and_process_vendas(10).await.expect("Falha ao processar vendas");
-    
-    // Verificar se todas as vendas foram processadas
+
     assert_eq!(processed_vendas.len(), vendas_to_add.len(), 
               "Número de vendas processadas ({}) não corresponde ao número de vendas adicionadas ({})", 
               processed_vendas.len(), vendas_to_add.len());
     
-    // Verificar conteúdo das vendas (a ordem pode variar)
     let mut found_vendas = vec![false; vendas_to_add.len()];
     for processed_venda in &processed_vendas {
         let index = vendas_to_add.iter().position(|venda| {
@@ -124,9 +114,8 @@ async fn test_multiple_vendas() {
         if let Some(i) = index {
             found_vendas[i] = true;
         }
-    }
-    
-    // Verificar se todas as vendas foram encontradas
+    }    
+
     for (i, found) in found_vendas.iter().enumerate() {
         assert!(*found, "Venda {} não foi encontrada na fila processada", i);
     }
