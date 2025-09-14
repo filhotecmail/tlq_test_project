@@ -84,16 +84,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 subtotal: 89.90,
             }
         ],
-    };
-    
-    // Converter vendas para XML
+    };    
+
     let xml_venda1 = gerar_xml_nota_fiscal(&venda1);
     let xml_venda2 = gerar_xml_nota_fiscal(&venda2);
     
     println!("XML da Venda 1:\n{}\n", xml_venda1);
-    println!("XML da Venda 2:\n{}\n", xml_venda2);
-    
-    // Adicionar mensagens à fila (em formato JSON para facilitar o processamento)
+    println!("XML da Venda 2:\n{}\n", xml_venda2);    
+
     let venda1_json = serde_json::to_string(&venda1)?;
     let venda2_json = serde_json::to_string(&venda2)?;
     
@@ -101,9 +99,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let message2 = client.add_message(&venda2_json).await?;
     
     println!("Venda 1 adicionada com ID: {}", message1.id);
-    println!("Venda 2 adicionada com ID: {}", message2.id);
-    
-    // Recuperar mensagens da fila
+    println!("Venda 2 adicionada com ID: {}", message2.id);    
+
     let messages = client.get_messages(5).await?;
     println!("Recuperadas {} mensagens da fila", messages.len());
     
@@ -111,13 +108,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         match serde_json::from_str::<Venda>(&msg.body) {
             Ok(venda) => {
                 println!("Venda recebida - ID: {}, Cliente: {}, Valor: R$ {:.2}", 
-                         venda.id, venda.cliente_id, venda.valor_total);
-                
-                // Gerar XML da nota fiscal
+                         venda.id, venda.cliente_id, venda.valor_total);                
+        
                 let xml_nfe = gerar_xml_nota_fiscal(&venda);
-                println!("XML gerado para a venda {}:\n{}\n", venda.id, xml_nfe);
-                
-                // Deletar a mensagem após processamento
+                println!("XML gerado para a venda {}:\n{}\n", venda.id, xml_nfe);                
+   
                 client.delete_message(msg.id).await?;
                 println!("Venda {} deletada com sucesso\n", venda.id);
             }
